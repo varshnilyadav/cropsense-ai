@@ -1,0 +1,161 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { UploadCloud, Camera, Image as ImageIcon, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+export default function DetectPage() {
+  const router = useRouter();
+  const [dragActive, setDragActive] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    if (e.target.files && e.target.files[0]) {
+      handleFile(e.target.files[0]);
+    }
+  };
+
+  const handleFile = (file: File) => {
+    setFile(file);
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+  };
+
+  const clearFile = () => {
+    setFile(null);
+    setPreview(null);
+  };
+
+  const analyzeImage = async () => {
+    setIsAnalyzing(true);
+    // Simulate API call using our mock endpoint
+    await fetch("/api/predict", { method: "POST" });
+    // Navigate to a result page (using a mock ID 123)
+    router.push("/dashboard/result/123");
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Detect Disease</h1>
+        <p className="text-slate-500">Upload a clear photo of the affected crop leaf for analysis.</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Image Upload</CardTitle>
+          <CardDescription>Drag and drop your image or use the camera to take a photo.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!preview ? (
+            <div 
+              className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors ${
+                dragActive ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20" : "border-slate-200 dark:border-slate-800"
+              }`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
+              <div className="flex flex-col items-center justify-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <UploadCloud className="h-8 w-8 text-slate-500" />
+                </div>
+                <div>
+                  <p className="text-lg font-medium text-slate-900 dark:text-slate-100">
+                    Drag & drop an image here
+                  </p>
+                  <p className="text-sm text-slate-500 mb-4">
+                    PNG, JPG, JPEG up to 10MB
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <input
+                      type="file"
+                      id="file-upload"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      accept="image/*"
+                      onChange={handleChange}
+                    />
+                    <Button variant="outline" className="pointer-events-none gap-2">
+                      <ImageIcon className="h-4 w-4" /> Browse Files
+                    </Button>
+                  </div>
+                  <span className="text-slate-400 text-sm">or</span>
+                  <Button variant="outline" className="gap-2">
+                    <Camera className="h-4 w-4" /> Take Photo
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="relative rounded-xl overflow-hidden border bg-slate-100 dark:bg-slate-900 aspect-video flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={preview} alt="Preview" className="object-contain max-h-full" />
+                <Button 
+                  variant="destructive" 
+                  size="icon" 
+                  className="absolute top-2 right-2 rounded-full"
+                  onClick={clearFile}
+                  disabled={isAnalyzing}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                
+                {isAnalyzing && (
+                  <div className="absolute inset-0 bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center">
+                    <div className="h-16 w-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-4"></div>
+                    <h3 className="text-lg font-medium text-emerald-700 dark:text-emerald-400">Analyzing Image...</h3>
+                    <p className="text-sm text-slate-500">Running through AI models</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={clearFile} disabled={isAnalyzing}>Cancel</Button>
+                <Button onClick={analyzeImage} disabled={isAnalyzing} className="px-8">
+                  {isAnalyzing ? "Processing..." : "Analyze Image"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      
+      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl p-4 flex gap-3 text-sm text-blue-800 dark:text-blue-300">
+        <ShieldCheck className="h-5 w-5 shrink-0" />
+        <p>For best results, ensure the leaf is well-lit, in focus, and takes up most of the frame. Avoid blurry or very dark photos.</p>
+      </div>
+    </div>
+  );
+}
+
+// Ensure ShieldCheck is imported
+import { ShieldCheck } from "lucide-react";
