@@ -40,6 +40,7 @@ export default function ResultPage() {
         disease,
         crop,
         confidence,
+        gradcam_image: prediction.gradcam?.available ? prediction.gradcam.image : null,
         severity:
           disease.toLowerCase() === "healthy"
             ? "Low"
@@ -133,10 +134,19 @@ export default function ResultPage() {
         <div className="lg:col-span-1 space-y-6">
           <Card className="overflow-hidden border-2 border-emerald-500/20 shadow-lg shadow-emerald-500/5">
             <div className="h-48 bg-slate-200 dark:bg-slate-800 relative">
-              {/* Placeholder for uploaded image */}
-              <div className="absolute inset-0 flex items-center justify-center text-slate-400">
-                <ImageIcon className="h-12 w-12 opacity-50" />
+              {/* Uploaded image or Grad-CAM */}
+              <div className="absolute inset-0 flex items-center justify-center text-slate-400 overflow-hidden">
+                {result.gradcam_image ? (
+                  <img src={result.gradcam_image} alt="Grad-CAM AI Focus" className="w-full h-full object-cover" />
+                ) : (
+                  <ImageIcon className="h-12 w-12 opacity-50" />
+                )}
               </div>
+              {result.gradcam_image && (
+                <div className="absolute top-3 left-3 bg-black/70 text-white px-2 py-1 rounded text-xs font-medium backdrop-blur-md shadow-sm border border-white/10">
+                  AI Focus Area
+                </div>
+              )}
               <div className="absolute bottom-3 right-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-emerald-600" />
                 <span>AI Confidence: {result.confidence}%</span>
