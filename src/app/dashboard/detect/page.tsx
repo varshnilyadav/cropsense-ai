@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { UploadCloud, Camera, Image as ImageIcon, X } from "lucide-react";
+import { UploadCloud, Camera, Image as ImageIcon, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -12,6 +12,7 @@ export default function DetectPage() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [retakeError, setRetakeError] = useState<{ error: string, stage: string } | null>(null);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -75,6 +76,14 @@ export default function DetectPage() {
 
       console.log("CropSense prediction:", prediction);
 
+      if (prediction.success === false && prediction.needs_retake === true) {
+        setRetakeError({
+          error: prediction.error || "Please take a clearer photo of the leaf.",
+          stage: prediction.stage || "unknown",
+        });
+        return;
+      }
+
       // Temporarily store the real prediction
       sessionStorage.setItem(
         "cropsense_prediction",
@@ -105,7 +114,32 @@ export default function DetectPage() {
           <CardDescription>Drag and drop your image or use the camera to take a photo.</CardDescription>
         </CardHeader>
         <CardContent>
-          {!preview ? (
+          {retakeError ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-8 text-center animate-in zoom-in-95 duration-300">
+              <div className="h-16 w-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-2">
+                <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-500" />
+              </div>
+              <h3 className="text-xl font-bold text-amber-900 dark:text-amber-400">
+                {retakeError.stage === "image_quality" ? "Image Quality Too Low" : 
+                 retakeError.stage === "unfamiliar_image" ? "Unfamiliar Image Detected" : 
+                 retakeError.stage === "low_confidence" ? "Low Confidence" : "Please Retake Photo"}
+              </h3>
+              <p className="text-slate-600 dark:text-slate-300 max-w-md">
+                {retakeError.error}
+              </p>
+              <div className="mt-6 flex justify-center w-full">
+                <Button 
+                  onClick={() => {
+                    setRetakeError(null);
+                    clearFile();
+                  }}
+                  className="px-8 gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  <Camera className="h-4 w-4" /> Try Again
+                </Button>
+              </div>
+            </div>
+          ) : !preview ? (
             <div
               className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors ${dragActive ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20" : "border-slate-200 dark:border-slate-800"
                 }`}
