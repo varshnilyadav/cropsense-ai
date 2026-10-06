@@ -4,18 +4,81 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Download, Share2, AlertTriangle, Bug, Droplets,
-  Leaf, Thermometer, ShieldCheck, CheckCircle2, FlaskConical
+  Leaf, Thermometer, ShieldCheck, CheckCircle2, FlaskConical, CloudRain, MapPinOff, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { diseaseKnowledgeDB, fallbackKnowledge } from "@/data/diseaseKnowledge";
 
 export default function ResultPage() {
   const router = useRouter();
   const { id } = useParams();
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
+  const [weatherData, setWeatherData] = useState<any>(null);
+  const [weatherLoading, setWeatherLoading] = useState(true);
+  const [weatherError, setWeatherError] = useState("");
+  const [dynamicAdvisory, setDynamicAdvisory] = useState("");
+
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            const res = await fetch(`/api/weather?lat=${latitude}&lon=${longitude}`);
+            if (!res.ok) throw new Error("Weather fetch failed");
+            const data = await res.json();
+            setWeatherData(data);
+          } catch (err) {
+            setWeatherError("Weather unavailable. Falling back to general advisory.");
+          } finally {
+            setWeatherLoading(false);
+          }
+        },
+        (error) => {
+          setWeatherError("Location permission denied. Showing general advisory.");
+          setWeatherLoading(false);
+        }
+      );
+    } else {
+      setWeatherError("Geolocation not supported.");
+      setWeatherLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (result && weatherData && !weatherError) {
+      const { temperature, humidity, precipitation } = weatherData;
+      const { disease, crop } = result;
+      
+      let advice = `Current local conditions: ${temperature}°C, ${humidity}% humidity. `;
+      const isBlight = disease.toLowerCase().includes("blight");
+      const isRust = disease.toLowerCase().includes("rust");
+      const isHealthy = disease.toLowerCase().includes("healthy");
+
+      if (isHealthy) {
+        advice += "Conditions are currently being logged. Continue normal preventative care.";
+      } else if (humidity > 80 && (isBlight || isRust)) {
+        advice += "CRITICAL: High humidity rapidly accelerates spore spread. Ensure maximum air circulation immediately and apply treatments.";
+      } else if (precipitation > 0 && isRust) {
+        advice += "Rainfall creates optimal conditions for rust spores. Avoid working in the field while foliage is wet.";
+      } else if (temperature > 30) {
+        advice += "High temperatures can stress the plant. Maintain adequate irrigation while avoiding overhead watering to keep foliage dry.";
+      } else if (humidity > 70) {
+        advice += "Elevated humidity favors fungal growth. Monitor closely for symptom progression.";
+      } else {
+        advice += "Current weather conditions are stable. Follow standard treatment protocols.";
+      }
+      
+      advice += " Note: This is supplementary advice. Follow local agricultural guidance.";
+      setDynamicAdvisory(advice);
+    }
+  }, [result, weatherData, weatherError]);
+
 
   useEffect(() => {
     try {
@@ -35,60 +98,18 @@ export default function ResultPage() {
       const crop = prediction.crop || "Unknown Crop";
       const confidence = prediction.confidence || 0;
 
+      const className = prediction.class_name;
+      const knowledge = className && diseaseKnowledgeDB[className] 
+        ? diseaseKnowledgeDB[className] 
+        : fallbackKnowledge;
+
       // Build the result object expected by the existing UI.
       const resultData = {
         disease,
         crop,
         confidence,
         gradcam_image: prediction.gradcam?.available ? prediction.gradcam.image : null,
-        severity:
-          disease.toLowerCase() === "healthy"
-            ? "Low"
-            : "Moderate",
-
-        scientific_name: "",
-
-        symptoms: [
-          "Visible symptoms detected by the CropSense AI model.",
-          "Consult local agricultural guidance for confirmation."
-        ],
-
-        cause:
-          disease.toLowerCase() === "healthy"
-            ? "No disease detected by the model."
-            : `${disease} detected by the CropSense AI model.`,
-
-        organic_treatment: [
-          "Remove severely affected plant material.",
-          "Maintain good airflow around plants.",
-          "Monitor nearby plants for similar symptoms."
-        ],
-
-        chemical_treatment: [
-          "Consult local agricultural guidance before applying pesticides.",
-          "Use only products approved for the specific crop and disease."
-        ],
-
-        recommended_pesticide:
-          "Use only locally approved treatment after confirmation.",
-
-        dosage:
-          "Follow the product label and local agricultural recommendations.",
-
-        prevention: [
-          "Remove infected plant material.",
-          "Avoid excessive leaf wetness.",
-          "Maintain proper crop spacing and sanitation."
-        ],
-
-        weather_advisory:
-          "Monitor local weather conditions because humidity and rainfall can affect disease spread.",
-
-        ai_recommendation:
-          confidence >= 80
-            ? `CropSense AI detected ${disease} in ${crop} with ${confidence}% confidence.`
-            : `CropSense AI detected a possible case of ${disease}. Consider uploading a clearer image for confirmation.`
-      };
+        ...knowledge      };
 
       setResult(resultData);
     } catch (error) {
@@ -259,16 +280,42 @@ export default function ResultPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-slate-300 leading-relaxed">
-                  {result.weather_advisory}
-                </p>
+                {weatherLoading ? (
+                  <div className="flex flex-col items-center justify-center py-4 text-slate-400">
+                    <Loader2 className="h-6 w-6 animate-spin mb-2 text-amber-400" />
+                    <span className="text-xs">Fetching local weather...</span>
+                  </div>
+                ) : weatherError ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-amber-400/80 text-sm bg-amber-400/10 p-2 rounded">
+                      <MapPinOff className="h-4 w-4" />
+                      <span>{weatherError}</span>
+                    </div>
+                    <p className="text-sm text-slate-300 leading-relaxed">
+                      {result.weather_advisory}
+                    </p>
+                  </div>
+                ) : weatherData && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2 text-sm text-slate-200">
+                      <div className="bg-white/5 p-2 rounded flex flex-col items-center justify-center border border-white/10">
+                        <Thermometer className="h-4 w-4 text-amber-400 mb-1" />
+                        <span>{weatherData.temperature}°C</span>
+                      </div>
+                      <div className="bg-white/5 p-2 rounded flex flex-col items-center justify-center border border-white/10">
+                        <Droplets className="h-4 w-4 text-blue-400 mb-1" />
+                        <span>{weatherData.humidity}% Hum</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-300 leading-relaxed">
+                      {dynamicAdvisory || result.weather_advisory}
+                    </p>
+                  </div>
+                )}
                 <div className="p-3 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10">
                   <div className="text-xs text-emerald-300 uppercase tracking-wider font-semibold mb-1">AI Recommendation</div>
                   <p className="text-sm font-medium">{result.ai_recommendation}</p>
                 </div>
-                <Button className="w-full bg-white text-slate-900 hover:bg-slate-200 mt-2">
-                  Discuss with AI Advisor
-                </Button>
               </CardContent>
             </Card>
           </div>
