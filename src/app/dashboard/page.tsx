@@ -7,8 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function DashboardPage() {
+  const { t } = useLanguage();
   const [weather, setWeather] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -25,8 +27,8 @@ export default function DashboardPage() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-slate-500">Welcome back! Here's an overview of your farm today.</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("dashboard")}</h1>
+          <p className="text-slate-500">{t("welcome_back") || "Welcome back! Here's an overview of your farm today."}</p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <Link href="/dashboard/detect" className="flex-1 sm:flex-none">
@@ -61,11 +63,11 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Wind className="h-4 w-4 text-emerald-200" />
-                    <span>Wind: {weather?.wind_speed} km/h</span>
+                    <span>Wind: {weather?.wind_speed || 0} km/h</span>
                   </div>
                   <div className="flex items-center gap-2 col-span-2 mt-2 pt-2 border-t border-white/20 text-emerald-100">
                     <AlertTriangle className="h-4 w-4 text-amber-300" />
-                    <span>{weather?.alerts[0]}</span>
+                    <span>{weather?.alerts?.[0] || "No current alerts"}</span>
                   </div>
                 </div>
               </div>
@@ -79,8 +81,8 @@ export default function DashboardPage() {
             <Leaf className="h-24 w-24" />
           </div>
           <CardHeader>
-            <CardTitle>Today's AI Tip</CardTitle>
-            <CardDescription>Based on your farm's condition</CardDescription>
+            <CardTitle>{t("ai_tip") || "Today's AI Tip"}</CardTitle>
+            <CardDescription>{t("farm_condition") || "Based on your farm's condition"}</CardDescription>
           </CardHeader>
           <CardContent className="flex-1">
             <p className="text-slate-600 dark:text-slate-300">
@@ -98,7 +100,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Predictions */}
-      <h2 className="text-xl font-bold tracking-tight mt-10 mb-4">Recent Scans</h2>
+      <h2 className="text-xl font-bold tracking-tight mt-10 mb-4">{t("recent_scans") || "Recent Scans"}</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {[
           { disease: "Tomato Early Blight", crop: "Tomato", status: "High Risk", date: "2 hours ago" },
