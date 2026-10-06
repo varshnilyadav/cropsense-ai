@@ -13,6 +13,7 @@ import {
   LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -29,7 +30,9 @@ const bottomItems = [
 ];
 
 export function Sidebar() {
+  const { t } = useLanguage();
   const pathname = usePathname();
+
 
   return (
     <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-4rem)] w-64 flex-col border-r bg-white/70 dark:bg-slate-950/70 backdrop-blur-md md:flex">
@@ -49,7 +52,7 @@ export function Sidebar() {
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                {item.name}
+                {t(item.name.toLowerCase().replace(" ", "_"))}
               </Link>
             );
           })}
@@ -63,7 +66,7 @@ export function Sidebar() {
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50"
             >
               <item.icon className="h-5 w-5" />
-              {item.name}
+              {t(item.name.toLowerCase().replace(" ", "_"))}
             </Link>
           ))}
         </nav>

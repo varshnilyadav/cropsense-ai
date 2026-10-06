@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function DetectPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -104,14 +105,14 @@ export default function DetectPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Detect Disease</h1>
-        <p className="text-slate-500">Upload a clear photo of the affected crop leaf for analysis.</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t('detect_disease')}</h1>
+        <p className="text-slate-500">{t('detect_desc')}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Image Upload</CardTitle>
-          <CardDescription>Drag and drop your image or use the camera to take a photo.</CardDescription>
+          <CardTitle>{t('upload_image')}</CardTitle>
+          <CardDescription>{t('upload_desc')}</CardDescription>
         </CardHeader>
         <CardContent>
           {retakeError ? (
@@ -120,9 +121,9 @@ export default function DetectPage() {
                 <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-500" />
               </div>
               <h3 className="text-xl font-bold text-amber-900 dark:text-amber-400">
-                {retakeError.stage === "image_quality" ? "Image Quality Too Low" : 
-                 retakeError.stage === "unfamiliar_image" ? "Unfamiliar Image Detected" : 
-                 retakeError.stage === "low_confidence" ? "Low Confidence" : "Please Retake Photo"}
+                {retakeError.stage === "image_quality" ? t('image_quality_low') : 
+                 retakeError.stage === "unfamiliar_image" ? t('unfamiliar_image') : 
+                 retakeError.stage === "low_confidence" ? t('low_confidence') : t('retake_photo')}
               </h3>
               <p className="text-slate-600 dark:text-slate-300 max-w-md">
                 {retakeError.error}
@@ -135,7 +136,7 @@ export default function DetectPage() {
                   }}
                   className="px-8 gap-2 bg-amber-600 hover:bg-amber-700 text-white"
                 >
-                  <Camera className="h-4 w-4" /> Try Again
+                  <Camera className="h-4 w-4" /> {t('try_again')}
                 </Button>
               </div>
             </div>
@@ -171,12 +172,12 @@ export default function DetectPage() {
                       onChange={handleChange}
                     />
                     <Button variant="outline" className="pointer-events-none gap-2">
-                      <ImageIcon className="h-4 w-4" /> Browse Files
+                      <ImageIcon className="h-4 w-4" /> {t('browse_files')}
                     </Button>
                   </div>
                   <span className="text-slate-400 text-sm">or</span>
                   <Button variant="outline" className="gap-2">
-                    <Camera className="h-4 w-4" /> Take Photo
+                    <Camera className="h-4 w-4" /> {t('take_photo')}
                   </Button>
                 </div>
               </div>
@@ -199,16 +200,16 @@ export default function DetectPage() {
                 {isAnalyzing && (
                   <div className="absolute inset-0 bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center">
                     <div className="h-16 w-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-4"></div>
-                    <h3 className="text-lg font-medium text-emerald-700 dark:text-emerald-400">Analyzing Image...</h3>
-                    <p className="text-sm text-slate-500">Running through AI models</p>
+                    <h3 className="text-lg font-medium text-emerald-700 dark:text-emerald-400">{t('analyzing')}</h3>
+                    <p className="text-sm text-slate-500">{t('processing')}</p>
                   </div>
                 )}
               </div>
 
               <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={clearFile} disabled={isAnalyzing}>Cancel</Button>
+                <Button variant="outline" onClick={clearFile} disabled={isAnalyzing}>{t('cancel')}</Button>
                 <Button onClick={analyzeImage} disabled={isAnalyzing} className="px-8">
-                  {isAnalyzing ? "Processing..." : "Analyze Image"}
+                  {isAnalyzing ? t('processing') : t('analyze_btn')}
                 </Button>
               </div>
             </div>
@@ -218,7 +219,7 @@ export default function DetectPage() {
 
       <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl p-4 flex gap-3 text-sm text-blue-800 dark:text-blue-300">
         <ShieldCheck className="h-5 w-5 shrink-0" />
-        <p>For best results, ensure the leaf is well-lit, in focus, and takes up most of the frame. Avoid blurry or very dark photos.</p>
+        <p>{t('best_results_tip')}</p>
       </div>
     </div>
   );
@@ -226,3 +227,4 @@ export default function DetectPage() {
 
 // Ensure ShieldCheck is imported
 import { ShieldCheck } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";

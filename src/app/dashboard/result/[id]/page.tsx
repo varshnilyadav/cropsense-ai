@@ -11,8 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { diseaseKnowledgeDB, fallbackKnowledge } from "@/data/diseaseKnowledge";
+import { useLanguage } from "@/context/LanguageContext";
+import { useVoice } from "@/hooks/useVoice";
+import { Volume2, Square } from "lucide-react";
 
 export default function ResultPage() {
+  const { t, language } = useLanguage();
+  const { speak, stop, isSpeaking, isSupported } = useVoice();
   const router = useRouter();
   const { id } = useParams();
   const [result, setResult] = useState<any>(null);
@@ -34,13 +39,13 @@ export default function ResultPage() {
             const data = await res.json();
             setWeatherData(data);
           } catch (err) {
-            setWeatherError("Weather unavailable. Falling back to general advisory.");
+            setWeatherError(t('location_denied'));
           } finally {
             setWeatherLoading(false);
           }
         },
         (error) => {
-          setWeatherError("Location permission denied. Showing general advisory.");
+          setWeatherError(t('location_denied'));
           setWeatherLoading(false);
         }
       );
@@ -100,8 +105,8 @@ export default function ResultPage() {
 
       const className = prediction.class_name;
       const knowledge = className && diseaseKnowledgeDB[className] 
-        ? diseaseKnowledgeDB[className] 
-        : fallbackKnowledge;
+        ? diseaseKnowledgeDB[className][language] 
+        : fallbackKnowledge[language];
 
       // Build the result object expected by the existing UI.
       const resultData = {
@@ -276,14 +281,14 @@ export default function ResultPage() {
             <Card className="bg-gradient-to-br from-slate-900 to-slate-800 text-white border-transparent">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2 text-white">
-                  <Thermometer className="h-5 w-5 text-amber-400" /> Weather Advisory
+                  <Thermometer className="h-5 w-5 text-amber-400" /> {t('weather_advisory')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {weatherLoading ? (
                   <div className="flex flex-col items-center justify-center py-4 text-slate-400">
                     <Loader2 className="h-6 w-6 animate-spin mb-2 text-amber-400" />
-                    <span className="text-xs">Fetching local weather...</span>
+                    <span className="text-xs">{t('fetching_weather')}</span>
                   </div>
                 ) : weatherError ? (
                   <div className="space-y-4">
@@ -313,7 +318,7 @@ export default function ResultPage() {
                   </div>
                 )}
                 <div className="p-3 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10">
-                  <div className="text-xs text-emerald-300 uppercase tracking-wider font-semibold mb-1">AI Recommendation</div>
+                  <div className="text-xs text-emerald-300 uppercase tracking-wider font-semibold mb-1">{t('ai_recommendation')}</div>
                   <p className="text-sm font-medium">{result.ai_recommendation}</p>
                 </div>
               </CardContent>
